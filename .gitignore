@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+
+data/checkpoints/*
+!data/checkpoints/.gitkeep
+
+data/processed/*
+!data/processed/.gitkeep
+
+reports/daily_traffic_report.csv

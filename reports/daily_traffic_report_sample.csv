@@ -1,0 +1,5 @@
+junction_name,hour_of_day,peak_vehicle_count,average_speed,average_congestion_index,recommendation
+Borella,14,420,21.6,4.38,Normal monitoring is enough
+Nugegoda,14,505,13.4,9.11,Traffic police intervention needed
+Pettah,14,468,18.7,6.42,Normal monitoring is enough
+Rajagiriya,14,544,9.8,12.85,Traffic police intervention needed

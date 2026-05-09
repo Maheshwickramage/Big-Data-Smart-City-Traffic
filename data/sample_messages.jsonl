@@ -1,0 +1,4 @@
+{"sensor_id":"COL-001","junction_name":"Borella","event_time":"2026-05-09T14:00:00+00:00","vehicle_count":88,"avg_speed":24.5}
+{"sensor_id":"COL-002","junction_name":"Rajagiriya","event_time":"2026-05-09T14:00:02+00:00","vehicle_count":131,"avg_speed":8.7}
+{"sensor_id":"COL-003","junction_name":"Pettah","event_time":"2026-05-09T14:00:04+00:00","vehicle_count":69,"avg_speed":31.8}
+{"sensor_id":"COL-004","junction_name":"Nugegoda","event_time":"2026-05-09T14:00:06+00:00","vehicle_count":114,"avg_speed":9.1}

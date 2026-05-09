@@ -1,0 +1,135 @@
+services:
+  zookeeper:
+    image: bitnami/zookeeper:3.9
+    container_name: zookeeper
+    environment:
+      ALLOW_ANONYMOUS_LOGIN: "yes"
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: bitnami/kafka:3.7
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_CFG_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+    ports:
+      - "9092:9092"
+
+  kafka-init:
+    image: bitnami/kafka:3.7
+    container_name: kafka-init
+    depends_on:
+      - kafka
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        sleep 15
+        kafka-topics.sh --create --if-not-exists --topic traffic-data --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1
+        kafka-topics.sh --create --if-not-exists --topic critical-traffic --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1
+        echo "Kafka topics are ready."
+
+  producer:
+    image: python:3.11-slim
+    container_name: producer
+    depends_on:
+      - kafka-init
+    working_dir: /opt/project
+    command: >
+      bash -c "pip install --no-cache-dir kafka-python==2.0.2 && tail -f /dev/null"
+    volumes:
+      - ./:/opt/project
+
+  spark-master:
+    image: bitnami/spark:3.5.1
+    container_name: spark-master
+    hostname: spark-master
+    environment:
+      SPARK_MODE: master
+    ports:
+      - "7077:7077"
+      - "8080:8080"
+    volumes:
+      - ./:/opt/project
+
+  spark-worker:
+    image: bitnami/spark:3.5.1
+    container_name: spark-worker
+    depends_on:
+      - spark-master
+    environment:
+      SPARK_MODE: worker
+      SPARK_MASTER_URL: spark://spark-master:7077
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./:/opt/project
+
+  airflow-init:
+    image: apache/airflow:2.9.3
+    container_name: airflow-init
+    user: "50000:0"
+    environment:
+      AIRFLOW__CORE__EXECUTOR: SequentialExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      _PIP_ADDITIONAL_REQUIREMENTS: "pandas==2.2.3 pyarrow==17.0.0"
+    command: >
+      bash -c "
+      airflow db migrate &&
+      airflow users create
+      --username admin
+      --password admin
+      --firstname Admin
+      --lastname User
+      --role Admin
+      --email admin@example.com
+      "
+    volumes:
+      - airflow_home:/opt/airflow
+      - ./dags:/opt/airflow/dags
+      - ./data:/opt/airflow/data
+      - ./reports:/opt/airflow/reports
+
+  airflow-webserver:
+    image: apache/airflow:2.9.3
+    container_name: airflow-webserver
+    depends_on:
+      - airflow-init
+    user: "50000:0"
+    environment:
+      AIRFLOW__CORE__EXECUTOR: SequentialExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      _PIP_ADDITIONAL_REQUIREMENTS: "pandas==2.2.3 pyarrow==17.0.0"
+    command: airflow webserver
+    ports:
+      - "8088:8080"
+    volumes:
+      - airflow_home:/opt/airflow
+      - ./dags:/opt/airflow/dags
+      - ./data:/opt/airflow/data
+      - ./reports:/opt/airflow/reports
+
+  airflow-scheduler:
+    image: apache/airflow:2.9.3
+    container_name: airflow-scheduler
+    depends_on:
+      - airflow-webserver
+    user: "50000:0"
+    environment:
+      AIRFLOW__CORE__EXECUTOR: SequentialExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      _PIP_ADDITIONAL_REQUIREMENTS: "pandas==2.2.3 pyarrow==17.0.0"
+    command: airflow scheduler
+    volumes:
+      - airflow_home:/opt/airflow
+      - ./dags:/opt/airflow/dags
+      - ./data:/opt/airflow/data
+      - ./reports:/opt/airflow/reports
+
+volumes:
+  airflow_home:
