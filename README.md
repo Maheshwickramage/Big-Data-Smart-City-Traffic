@@ -82,6 +82,13 @@ Rajagiriya,14,544,9.8,12.85,Traffic police intervention needed
 docker compose up -d
 ```
 
+If you previously started the stack before these fixes, restart it cleanly:
+
+```bash
+docker compose down
+docker compose up -d
+```
+
 ### 2. Check running containers
 
 ```bash
@@ -106,8 +113,9 @@ KAFKA_BROKER=localhost:9092 python producers/traffic_producer.py
 Run this inside the Spark master container:
 
 ```bash
-docker compose exec spark-master spark-submit \
+docker compose exec spark-master /opt/spark/bin/spark-submit \
   --master spark://spark-master:7077 \
+  --conf spark.jars.ivy=/tmp/.ivy2 \
   --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1 \
   /opt/project/spark_jobs/traffic_streaming.py
 ```
